@@ -2,6 +2,8 @@ package cardiolex.readword.BO;
 
 import lombok.*;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 @Getter
@@ -22,6 +24,7 @@ public class Requirement {
 
     private String effort;
     private String path;
+    private String area;
 
     private List<String> tests;
 
@@ -30,12 +33,16 @@ public class Requirement {
         return "id,Work Item Type,title,description,state,reqId,effort,path,tags";
     }
 
+    // Kan antingen vara comma , eller semicollon ;
+    // Semicollon för att fungera direkt i excel, men comma fungerade i Azure
     public String getComboHeader() {
-        return "id;Work Item Type;title 1;title 2;description;state;Req ID;effort;area path;iteration path;tags";
+        //return "id,Work Item Type,title,description,state,Req ID,effort,area path,iteration path,tags,Steps";
+        return "id,Work Item Type,Title 1,Title 2,description,state,Req ID,effort,area path,iteration path,tags,Steps";
     }
+
     public String[] getComboHeaderArray() {
-        return new String[]{"id", "Work Item Type", "title 1", "title 2",
-                "description", "state", "Req ID", "effort","area path" ,"iteration path", "tags"};
+        return new String[]{"id", "Work Item Type", "title 1","title 2",
+                "description", "state", "Req ID", "effort", "area path", "iteration path", "tags", "Steps"};
     }
 
     public String getCSV() {
@@ -58,7 +65,7 @@ public class Requirement {
         return builder.toString();
     }
 
-    public String getCSVCombo(String[] cvsHeaders) {
+    public String getCSVCombo(String[] csvHeaders) {
 
         if (worksItem.isEmpty())
             worksItem = "User Story";
@@ -66,7 +73,11 @@ public class Requirement {
             path = "ECProjects\\Legacy";
 
         StringBuilder builder = new StringBuilder();
-        for (String s : cvsHeaders) {
+        Iterator<String> iterator = Arrays.stream(csvHeaders).iterator();
+        String s;
+        while (iterator.hasNext()) {
+            s = iterator.next();
+            //for (String s : cvsHeaders) {
             if (s.equals("id"))
                 if (ID != null)
                     builder.append(checkSpecialChars(ID));
@@ -75,7 +86,7 @@ public class Requirement {
                     builder.append(checkSpecialChars(worksItem));
             if (s.equals("title 1"))
                 if (title != null)
-                    builder.append(checkSpecialChars(title + ": " +ReqId));
+                    builder.append(checkSpecialChars(title + ": " + ReqId));
             if (s.equals("description"))
                 if (description != null)
                     builder.append(checkSpecialChars(description));
@@ -90,19 +101,24 @@ public class Requirement {
             if (s.equals("effort"))
                 if (effort != null)
                     builder.append(checkSpecialChars(effort));
-            if (s.contains("path"))
+            if (s.equals("area path"))
+                if (path != null)
+                    builder.append(checkSpecialChars(area));
+            if (s.equals("iteration path"))
                 if (path != null)
                     builder.append(checkSpecialChars(path));
+
 
             if (s.equals("tags")) {
                 if (tests.isEmpty())
                     return builder.toString();
                 for (String test : tests) {
                     if (!test.isEmpty())
-                        builder.append(checkSpecialChars(test)).append(" , ");
+                        builder.append(checkSpecialChars(test)).append(" ; ").append(checkSpecialChars(test)).append(" ; ");
                 }
             }
-            builder.append(";");
+            if (iterator.hasNext())
+                builder.append(",");
         }
         return builder.toString();
     }

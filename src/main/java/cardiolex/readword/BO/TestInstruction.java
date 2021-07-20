@@ -2,6 +2,8 @@ package cardiolex.readword.BO;
 
 import lombok.*;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 @Getter
@@ -14,9 +16,11 @@ public class TestInstruction {
     private String id;
     private List<String> tests;
 
+    private List<String> requirementIds;
 
     private String worksItem;
     private String path;
+    private String area;
 
 
     public String getCSVHeader() {
@@ -41,30 +45,69 @@ public class TestInstruction {
             path = "ECProjects\\Legacy";
 
         StringBuilder builder = new StringBuilder();
+        Iterator<String> iterator = Arrays.stream(cvsHeader).iterator();
+        String s;
+        while (iterator.hasNext()) {
+            s = iterator.next();
+            //for (String s : cvsHeader) {
 
-        for (String s : cvsHeader) {
+
             if (s.equals("title 2"))
-                if (id != null)
+                if (id != null && !id.isEmpty())
                     builder.append(checkSpecialChars(id));
+                    // TODO remove och kom på annan metod
+                else
+                    builder.append(checkSpecialChars("Temp name"));
 
             if (s.equals("Work Item Type"))
                 if (worksItem != null)
                     builder.append(checkSpecialChars(worksItem));
 
-            if (s.contains("path"))
+            if (s.equals("area path"))
+                if (path != null)
+                    builder.append(checkSpecialChars(area));
+            if (s.equals("iteration path"))
                 if (path != null)
                     builder.append(checkSpecialChars(path));
 
-            if (s.equals("description"))
-                if (!tests.isEmpty())
-                    if (tests.get(0) != null)
-                        builder.append(checkSpecialChars(tests.get(0)));
 
+            if (s.equals("Steps")) {
+                //builder.append("\"<steps id=\"0\" last=\"").append(tests.size()+1)
+                builder.append(("\"<steps "))
+                        .append(checkSpecialChars( "id=\"0\" last=\"")).append(tests.size()+1)
+                        .append(checkSpecialChars("\""))
+                        .append(">");
+                builder.append(checkSpecialChars(getTestSteps()));
+                builder.append(("</steps>\""));
+            }
 
             if (s.equals("state"))
                 builder.append("Design");
 
-            builder.append(";");
+            if (iterator.hasNext())
+                builder.append(",");
+        }
+
+        builder.append(System.lineSeparator());
+        //builder.append(System.lineSeparator()).append(getTestSteps(cvsHeader));
+
+        return builder.toString();
+    }
+
+    public String getTestSteps(){
+        StringBuilder builder = new StringBuilder();
+
+        int i = 2;
+        for (String test : tests) {
+            if (!test.isEmpty()) {
+                //builder.append("<step id=\"")
+                builder.append("<step id=\"").append(i++)
+            .append("\" type=\"ActionStep\"><parameterizedString isformatted=\"true\">&lt;DIV&gt;&lt;P&gt;")
+                        .append(checkSpecialChars(test))
+                        .append(checkSpecialChars( "&lt;/P&gt;&lt;/DIV&gt;</parameterizedString><parameterizedString isformatted="))
+                        .append( "\"true\"" )
+                               .append(checkSpecialChars(">&lt;DIV&gt;&lt;P&gt;&lt;BR/&gt;&lt;/P&gt;&lt;/DIV&gt;</parameterizedString><description/></step>"));
+            }
         }
         return builder.toString();
     }
@@ -75,7 +118,9 @@ public class TestInstruction {
             data = data.replace("\"", "\"\"");
             escapedData = "\"" + data + "\"";
         }
-        return escapedData;
+
+        return data.replaceAll(",", " ");
+        //return escapedData;
 
 
     }
