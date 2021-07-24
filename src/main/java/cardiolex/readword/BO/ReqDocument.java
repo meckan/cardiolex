@@ -6,6 +6,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.*;
 import org.springframework.stereotype.Component;
 
+import javax.xml.bind.SchemaOutputResolver;
 import java.io.*;
 import java.util.*;
 import java.util.zip.ZipException;
@@ -25,40 +26,9 @@ public class ReqDocument {
         testInstructionList = new ArrayList<>();
     }
 
-
-    public void checkAllElements(String fileUrl) throws IOException {
-        //File file = new File("src/main/resources/testdoc.docx");
-        File file = new File(fileUrl);
-        XWPFDocument doc = new XWPFDocument(new FileInputStream(file));
-
-        Iterator<IBodyElement> iter = doc.getBodyElementsIterator();
-        while (iter.hasNext()) {
-            IBodyElement elem = iter.next();
-            if (elem instanceof XWPFParagraph) {
-                System.out.println("paragrap");
-                System.out.println(((XWPFParagraph) elem).getText());
-            } else if (elem instanceof XWPFTable) {
-                System.out.println("table");
-                System.out.println(((XWPFTable) elem).getText());
-
-                if(((XWPFTable) elem).getText().isEmpty()){
-                    System.out.println(((XWPFTable) elem).getRows().size());
-                    for (XWPFTableRow row: ((XWPFTable) elem).getRows()) {
-                        for (XWPFTableCell cell: row.getTableCells()) {
-                            System.out.println(cell.getText());
-                        }
-                    }
-
-
-                }
-
-
-            }
-        }
-    }
-
     /**
      * Method to print al the objects in to CVS files
+     *
      * @return idk returns true if the CSV files was created and saved.
      */
     //TODO se hur man får med alla test steps i CSV filen för att kunna ladda upp dem
@@ -68,7 +38,7 @@ public class ReqDocument {
             PrintWriter writer;
 
             if (!requirementList.isEmpty()) {
-                writer = new PrintWriter("src/main/resources/requirementsCSV.csv","UTF-8");
+                writer = new PrintWriter("src/main/resources/requirementsCSV.csv", "UTF-8");
                 writer.write(requirementList.get(0).getCSVHeader() + "\n");
                 //writer.println();
                 for (Requirement r : requirementList) {
@@ -77,7 +47,7 @@ public class ReqDocument {
                 writer.close();
             }
             if (!testInstructionList.isEmpty()) {
-                writer = new PrintWriter("src/main/resources/reqTestCSV.csv","UTF-8");
+                writer = new PrintWriter("src/main/resources/reqTestCSV.csv", "UTF-8");
                 writer.write(testInstructionList.get(0).getCSVHeader() + "\n");
 
                 for (TestInstruction test : testInstructionList) {
@@ -87,10 +57,9 @@ public class ReqDocument {
                 writer.close();
             }
 
-            if(!testInstructionList.isEmpty() && !requirementList.isEmpty()){
-                writer = new PrintWriter("src/main/resources/comboFile.csv","UTF-8");
+            if (!testInstructionList.isEmpty() && !requirementList.isEmpty()) {
+                writer = new PrintWriter("src/main/resources/comboFile.csv", "UTF-8");
                 writer.write(requirementList.get(0).getComboHeader() + "\n");
-
 //                for (TestInstruction testInstruction: testInstructionList) {
 //                    writer.write(testInstruction.getComboCSV(requirementList.get(0).getComboHeaderArray()));
 //                        for (Requirement req: requirementList) {
@@ -101,13 +70,10 @@ public class ReqDocument {
 //
 //                    }
 //                }
-
-                for (Requirement req: requirementList) {
+                for (Requirement req : requirementList) {
                     writer.write(req.getCSVCombo(requirementList.get(0).getComboHeaderArray()) + "\n");
-                    for (TestInstruction test: testInstructionList) {
-                        if(test.getRequirementIds() != null && test.getRequirementIds().contains(req.getReqId())){
-
-
+                    for (TestInstruction test : testInstructionList) {
+                        if (test.getRequirementIds() != null && test.getRequirementIds().contains(req.getReqId())) {
                             writer.write(test.getComboCSV(requirementList.get(0).getComboHeaderArray()));
                         }
                     }
@@ -125,6 +91,7 @@ public class ReqDocument {
      * Main method that takes in a folderPath and reads all the files in the folder,
      * also works with just one file.
      * TODO denna kan behöva kolla så att den endast kollar docx filen.
+     *
      * @param folderPath path to the folder / file to look at.
      */
     public void readFolder(String folderPath) {
@@ -141,31 +108,47 @@ public class ReqDocument {
 
     /**
      * Simple UI metod to just ask the user if the current file contains requirements or tests.
+     *
      * @param file current file to check.
      */
     public void readWordFile(File file) {
         try {
-            System.out.println(file.getName());
+            //System.out.println(file.getName());
 
             XWPFDocument document = new XWPFDocument(new FileInputStream(file));
             Scanner scanner = new Scanner(System.in);
             List<String> answers = Arrays.asList("y", "yes");
 
-            System.out.println("Dose " + file.getName() + " contain requirements?: (yes (y), no (n))");
-            if (answers.contains(scanner.nextLine().toLowerCase(Locale.ROOT)))
-                readRequirements(document,getArea(file.getName()));
+            if (file.getName().contains("Kravspecifikation") && !file.getName().contains("Test")) {
+                readRequirements(document, getArea(file.getName()));
+            } else {
+                System.out.println("Dose " + file.getName() + " contain requirements?: (yes (y), no (n))");
+                if (answers.contains(scanner.nextLine().toLowerCase(Locale.ROOT)))
+                    readRequirements(document, getArea(file.getName()));
+            }
 
-            System.out.println("Dose " + file.getName() + " contain tests?: (yes (y), no (n))");
-            if (answers.contains(scanner.nextLine().toLowerCase(Locale.ROOT)))
-                readReqTest(document.getParagraphs(),getArea(file.getName()));
+            if (file.getName().contains("Test") && !file.getName().contains("Kravspecifikation")) {
+                readTestFromParagraph(document.getParagraphs(), getArea(file.getName()));
+                readTestsFromSDTAndTable(document, getArea(file.getName()));
+            } else {
+                System.out.println("Dose " + file.getName() + " contain tests?: (yes (y), no (n))");
+                if (answers.contains(scanner.nextLine().toLowerCase(Locale.ROOT))) {
+                    readTestFromParagraph(document.getParagraphs(), getArea(file.getName()));
+                    readTestsFromSDTAndTable(document, getArea(file.getName()));
+                }
+            }
 
             System.out.println("Req: " + requirementList.size());
+
+            for (Requirement req : requirementList) {
+                System.out.println(req.toString());
+            }
+
             System.out.println("Tests: " + testInstructionList.size());
 
-        }catch (NotOfficeXmlFileException | IllegalStateException | ZipException e){
-            System.out.println("Skipping: " + file.getName() +"\nWas not Word document");
-        }
-        catch(IOException e) {
+        } catch (NotOfficeXmlFileException | IllegalStateException | ZipException e) {
+            System.out.println("Skipping: " + file.getName() + "\nWas not Word document");
+        } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -173,23 +156,25 @@ public class ReqDocument {
     /**
      * Method to read all the requirements from a word docx file.
      * Looks at all the tables in the docx file and find the tabels and checks if its fits.
+     *
      * @param doc the current docx file
      */
-    private void readRequirements(XWPFDocument doc,String area) {
+    private void readRequirements(XWPFDocument doc, String area) {
 //        Scanner scanner = new Scanner(System.in);
 //        List<String> answers = Arrays.asList("y", "yes");
         Iterator<IBodyElement> iter = doc.getBodyElementsIterator();
+
+
         String tableName = null;
 
         while (iter.hasNext()) {
             IBodyElement elem = iter.next();
             if (elem instanceof XWPFParagraph) {
 
+                //System.out.println(((XWPFParagraph) elem).getText());
 
-                System.out.println(((XWPFParagraph) elem).getText());
-
-                String temp  = ((XWPFParagraph) elem).getText();
-                if(!temp.isEmpty())
+                String temp = ((XWPFParagraph) elem).getText();
+                if (!temp.isEmpty())
                     tableName = temp;
             } else if (elem instanceof XWPFTable) {
                 if (!((XWPFTable) elem).getText().equals("OK\t\tFelrapport #\t\n")) {
@@ -202,11 +187,22 @@ public class ReqDocument {
 //                    if (answers.contains(scanner.nextLine().toLowerCase(Locale.ROOT)))
 //                        readTable((XWPFTable) elem,tableName);
                     //System.out.println(((XWPFTable) elem).getRow(0).getCell(0).getText().toCharArray());
-                    if(checkIfNewTest(((XWPFTable) elem).getRow(0).getCell(0).getText().toCharArray())) {
+                    if (checkIfNewTest(((XWPFTable) elem).getRow(0).getCell(0).getText().toCharArray())) {
                         //System.out.println("Was true: " + Arrays.toString(((XWPFTable) elem).getRow(0).getCell(0).getText().toCharArray()));
-                        readTable((XWPFTable) elem, tableName,area);
+                        readTable((XWPFTable) elem, tableName, area);
                     }
                 }
+            } else if (elem instanceof XWPFSDT) {
+
+                String contentText = ((XWPFSDT) elem).getContent().getText();
+                String[] contentArray = contentText.split("\n");
+
+                TestInstruction test = new TestInstruction();
+                test.setTests(Arrays.asList(contentArray));
+                test.setId(tableName);
+
+                //System.out.println(test.toString());
+
             }
         }
 //        for (XWPFTable t : tables) {
@@ -225,7 +221,8 @@ public class ReqDocument {
 
     /**
      * Reads a tables that's shown to fit the model of a requirement.
-     * @param table the table object from Apatche poi
+     *
+     * @param table     the table object from Apatche poi
      * @param tableName the label of the current table
      */
     private void readTable(XWPFTable table, String tableName, String area) {
@@ -238,7 +235,7 @@ public class ReqDocument {
             req.setArea(area);
 
             req.setTests(new ArrayList<>());
-            if(row.getTableCells().size() == 3)
+            if (row.getTableCells().size() == 3)
                 req.setTests(Arrays.asList(row.getCell(2).getText().split(" |,")));
 
             for (XWPFTableCell cell : row.getTableCells()) {
@@ -256,9 +253,10 @@ public class ReqDocument {
 
     /**
      * Method to read a table that's inside a table cell in the requirements to be able to read inner tables
+     *
      * @param table the current inner table
-     * @param des Stringbuilder object that contains all the parts of the description
-     * @param tab just to get the right nr of tabs to be able to format the description
+     * @param des   Stringbuilder object that contains all the parts of the description
+     * @param tab   just to get the right nr of tabs to be able to format the description
      * @return returns the
      */
     private String readInnerTable(XWPFTable table, StringBuilder des, String tab) {
@@ -282,38 +280,45 @@ public class ReqDocument {
     /**
      * Method to read the test instructions, using the standard model of the paragraphs that starts with
      * "Testinstruktion" and ends with "Avslutande åtgärder"
+     *
      * @param paragraphs list of all the paragraphs in a docx file
      */
-    private void readReqTest(List<XWPFParagraph> paragraphs,String area) {
+    private void readTestFromParagraph(List<XWPFParagraph> paragraphs, String area) {
         TestInstruction testInstruction = null;
         boolean add = false;
 
         Iterator<XWPFParagraph> paragraphIterator = paragraphs.iterator();
-        XWPFParagraph currentParagraph;
+        XWPFParagraph currentParagraph = null;
 
         List<String> reqIds = null;
-        while (paragraphIterator.hasNext()){
-            currentParagraph = paragraphIterator.next();
-        //for (XWPFParagraph p : paragraphs) {
+        String paragraphTemp = null;
+        String subheading = null;
+        while (paragraphIterator.hasNext()) {
 
-            if(currentParagraph.getText().contains("Kommentar")){
+            if (currentParagraph != null) {
+                if (!currentParagraph.getText().isEmpty())
+                    paragraphTemp = currentParagraph.getText();
+            }
+            currentParagraph = paragraphIterator.next();
+            //for (XWPFParagraph p : paragraphs) {
+
+
+            if (currentParagraph.getText().contains("Kommentar")) {
                 reqIds = new ArrayList<>();
                 while (paragraphIterator.hasNext() &&
-                        !(currentParagraph = paragraphIterator.next()).getText().contains("Beskrivning")){
+                        !(currentParagraph = paragraphIterator.next()).getText().contains("Beskrivning")) {
                     //testInstruction.getRequirementIds().add(currentParagraph.getText().split("\t")[0]);
 
                     String[] dividedParagraph = currentParagraph.getText().split("\t");
-                    if(dividedParagraph.length > 0) {
+                    if (dividedParagraph.length > 0) {
                         String reqId = dividedParagraph[0];
                         if (checkIfNewTest(reqId.toCharArray())) {
                             //testInstruction.getRequirementIds().add(currentParagraph.getText().split("\t")[0]);
                             reqIds.add(reqId);
                         }
                     }
-
                 }
-            }
-            else if (currentParagraph.getText().contains("Testinstruktion")) {
+            } else if (currentParagraph.getText().contains("Testinstruktion")) {
                 add = true;
                 testInstruction = new TestInstruction();
                 testInstruction.setTests(new ArrayList<>());
@@ -322,13 +327,18 @@ public class ReqDocument {
 
             } else if (currentParagraph.getText().contains("Avslutande åtgärder")) {
                 //System.out.println(testInstruction.toString());
-                System.out.println(testInstruction.toString());
+                //System.out.println(testInstruction.toString());
+                if (testInstruction != null && testInstruction.getId() == null) {
+                    System.out.println("Updating id");
+                    testInstruction.setId(subheading);
+                    System.out.println(testInstruction.toString());
 
+                }
                 testInstructionList.add(testInstruction);
                 add = false;
             } else if (add) {
-                if(currentParagraph.getText().length() < 6){
-                    if(checkIfNewTest(currentParagraph.getText().toCharArray())){
+                if (currentParagraph.getText().length() < 6) {
+                    if (checkIfNewTest(currentParagraph.getText().toCharArray())) {
 //                        if(!testInstruction.getTests().isEmpty()){
 //                            testInstructionList.add(testInstruction);
 //                        }
@@ -336,33 +346,107 @@ public class ReqDocument {
                         testInstruction.setId(currentParagraph.getText());
                         //testInstruction.setTests(new ArrayList<>());
                     }
-                }
-                else if (!currentParagraph.getText().isEmpty() && !currentParagraph.getText().contains("Mötesprotokoll:") &&
+                } else if (!currentParagraph.getText().isEmpty() && !currentParagraph.getText().contains("Mötesprotokoll:") &&
                         !currentParagraph.getText().contains("Användarintyg:__")) {
                     testInstruction.getTests().add(currentParagraph.getText());
+                }
+            } else if (currentParagraph.getText().contains("Förberedelser")) {
+                System.out.println(paragraphTemp);
+                subheading = paragraphTemp;
+            }
+        }
+    }
+
+
+    private void readTestsFromSDTAndTable(XWPFDocument doc, String area) {
+
+        Iterator<IBodyElement> elemIterator = doc.getBodyElementsIterator();
+        String testName = null;
+        String bugName = null;
+        while (elemIterator.hasNext()) {
+            IBodyElement elem = elemIterator.next();
+            if (elem instanceof XWPFSDT) {
+                String contentText = ((XWPFSDT) elem).getContent().getText();
+                String[] contentArray = contentText.split("\n");
+
+                TestInstruction test = new TestInstruction();
+                test.setTests(Arrays.asList(contentArray));
+                test.setId(testName);
+                test.setArea(area);
+
+                if (bugName != null) {
+                    String[] req = bugName.split(":");
+
+                    if (bugName.contains("Bug ")) {
+                        Requirement requirement = new Requirement();
+                        requirement.setTitle(req[0]);
+                        requirement.setReqId(req[0]);
+                        requirement.setDescription(req[1]);
+                        requirement.setArea(area);
+                        requirement.setTests(new ArrayList<>());
+
+                        if (!this.requirementList.contains(requirement))
+                            this.requirementList.add(requirement);
+
+                        test.setRequirementIds(new ArrayList<>());
+                        test.getRequirementIds().add(req[0]);
+                    } else {
+                        test.setRequirementIds(new ArrayList<>());
+                        test.getRequirementIds().add(req[0].split(" ")[2]);
+                    }
+
+                }
+                testInstructionList.add(test);
+            } else if (elem instanceof XWPFParagraph) {
+                if (((XWPFParagraph) elem).getText().startsWith("Bug") || ((XWPFParagraph) elem).getText().startsWith("User Story"))
+                    bugName = ((XWPFParagraph) elem).getText();
+                else if (((XWPFParagraph) elem).getText().startsWith("TestCase"))
+                    testName = ((XWPFParagraph) elem).getText();
+                else if (((XWPFParagraph) elem).getText().equals("Testinstruktion")) {
+                    elemIterator.next();
+                    if ((elem = elemIterator.next()) instanceof XWPFTable) {
+                        TestInstruction test = new TestInstruction();
+                        test.setTests(new ArrayList<>());
+                        for (XWPFTableRow row : ((XWPFTable) elem).getRows()) {
+                            test.getTests().add(row.getCell(0).getText());
+                        }
+                        testInstructionList.add(test);
+                    }
                 }
             }
         }
     }
 
-    private boolean checkIfNewTest(char[] chars){
-        if(chars.length == 0)
+    private boolean checkIfNewTest(char[] chars) {
+        if (chars.length == 0)
             return false;
 
-        for (int i = 0; i < chars.length; i++) {
-            if(i < 2){
-                if(!Character.isAlphabetic(chars[i]))
-                    return false;
-            }else {
-                if(!Character.isDigit(chars[i]))
-                    return false;
+        boolean wasOnlyDitgets = true;
+        for (char aChar : chars) {
+            if (!Character.isDigit(aChar))
+                wasOnlyDitgets = false;
+        }
+
+        if (!wasOnlyDitgets) {
+            for (int i = 0; i < chars.length; i++) {
+                if (i < 2) {
+                    if (!Character.isAlphabetic(chars[i]))
+                        return false;
+                } else {
+                    if (!Character.isDigit(chars[i]))
+                        return false;
+                }
             }
         }
         return true;
     }
 
-    private String getArea(String fileName){
-        if(fileName.contains("ECView") || fileName.contains("EC-View"))
+    private String getArea(String fileName) {
+        if (fileName.contains("ECView") || fileName.contains("EC-View")
+                || fileName.contains("EC View")
+                || fileName.contains("ECSenseView")
+
+        )
             return "ECProjects\\Legacy\\ECView Legacy";
         return null;
     }

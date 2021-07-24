@@ -102,7 +102,7 @@ public class Requirement {
                 if (effort != null)
                     builder.append(checkSpecialChars(effort));
             if (s.equals("area path"))
-                if (path != null)
+                if (area != null)
                     builder.append(checkSpecialChars(area));
             if (s.equals("iteration path"))
                 if (path != null)
@@ -147,4 +147,22 @@ public class Requirement {
         return escapedData;
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Requirement that = (Requirement) o;
+
+        if (getTitle() != null ? !getTitle().equals(that.getTitle()) : that.getTitle() != null) return false;
+        return getDescription() != null ? getDescription().equals(that.getDescription()) : that.getDescription() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getTitle() != null ? getTitle().hashCode() : 0;
+        result = 31 * result + (getDescription() != null ? getDescription().hashCode() : 0);
+        return result;
+    }
 }

@@ -64,7 +64,7 @@ public class TestInstruction {
                     builder.append(checkSpecialChars(worksItem));
 
             if (s.equals("area path"))
-                if (path != null)
+                if (area != null)
                     builder.append(checkSpecialChars(area));
             if (s.equals("iteration path"))
                 if (path != null)
@@ -118,7 +118,7 @@ public class TestInstruction {
             data = data.replace("\"", "\"\"");
             escapedData = "\"" + data + "\"";
         }
-
+        data = data.replaceAll("\"","");
         return data.replaceAll(",", " ");
         //return escapedData;
 
