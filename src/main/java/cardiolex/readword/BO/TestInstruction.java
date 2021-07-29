@@ -74,10 +74,10 @@ public class TestInstruction {
             if (s.equals("Steps")) {
                 //builder.append("\"<steps id=\"0\" last=\"").append(tests.size()+1)
                 builder.append(("\"<steps "))
-                        .append(checkSpecialChars( "id=\"0\" last=\"")).append(tests.size()+1)
-                        .append(checkSpecialChars("\""))
+                        .append(checkSpecialCharsForTest( "id=\"0\" last=\"")).append(tests.size()+1)
+                        .append(checkSpecialCharsForTest("\""))
                         .append(">");
-                builder.append(checkSpecialChars(getTestSteps()));
+                builder.append(checkSpecialCharsForTest(getTestSteps()));
                 builder.append(("</steps>\""));
             }
 
@@ -113,15 +113,28 @@ public class TestInstruction {
     }
 
     private String checkSpecialChars(String data) {
-        String escapedData = data.replaceAll("\\R", " ");
+         data = data.replaceAll("\\R", " ");
         if (data.contains(",") || data.contains("\"") || data.contains("'")) {
-            data = data.replace("\"", "\"\"");
-            escapedData = "\"" + data + "\"";
+            data = data.replaceAll("\"", "\"\"");
+            //escapedData = "\"" + data + "\"";
         }
+
+        data = data.replaceAll("\n","");
         data = data.replaceAll("\"","");
         return data.replaceAll(",", " ");
         //return escapedData;
+    }
 
+    private String checkSpecialCharsForTest(String data) {
+        data = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replaceAll("\"", "\"\"");
+            //escapedData = "\"" + data + "\"";
+        }
 
+        data = data.replaceAll("\n","");
+        //data = data.replaceAll("\"","");
+        return data.replaceAll(",", " ");
+        //return escapedData;
     }
 }

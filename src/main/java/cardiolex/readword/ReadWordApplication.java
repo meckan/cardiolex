@@ -38,22 +38,6 @@ public class ReadWordApplication implements ApplicationRunner {
         document.printIntoCSV();
     }
 
-    void readElements(){
-        try {
-            //ReqDocument document = new ReqDocument();
-            String fileName = "E:\\Storage\\Cardiolex\\Files\\RS-20025-Kravspecifikation-EC View-2.2.docx";
-
-            fileName = "E:\\Storage\\Cardiolex\\Files\\TS-20031-TestSpec Regression_ECView_1.x.docx";
-
-            //Klar
-            //fileName = "E:\\Storage\\Cardiolex\\Files\\TS-20033-TestSpec EC View 2.2 tillägg.docx";
-
-            checkAllElements(fileName);
-        }catch (IOException e){
-            System.out.println("Error: "+ e.getMessage());
-        }
-    }
-
     void readReqFiles(){
         ReqDocument readWord = new ReqDocument();
         String folderPath = "E:\\Storage\\Cardiolex\\Files\\readFiles";
@@ -72,6 +56,22 @@ public class ReadWordApplication implements ApplicationRunner {
         readWord.printIntoCSV();
     }
 
+    void readElements(){
+        try {
+            //ReqDocument document = new ReqDocument();
+            String fileName = "E:\\Storage\\Cardiolex\\Files\\RS-20025-Kravspecifikation-EC View-2.2.docx";
+            //fileName = "E:\\Storage\\Cardiolex\\Files\\TS-20031-TestSpec Regression_ECView_1.x.docx";
+
+            fileName = "E:\\Storage\\Cardiolex\\Files\\TS-10019-TestSpec-CommonECSenseView.docx";
+
+            //Klar
+            //fileName = "E:\\Storage\\Cardiolex\\Files\\TS-20033-TestSpec EC View 2.2 tillägg.docx";
+
+            checkAllElements(fileName);
+        }catch (IOException e){
+            System.out.println("Error: "+ e.getMessage());
+        }
+    }
 
     public void checkAllElements(String fileUrl) throws IOException {
         //File file = new File("src/main/resources/testdoc.docx");
@@ -82,17 +82,30 @@ public class ReadWordApplication implements ApplicationRunner {
         while (iter.hasNext()) {
             IBodyElement elem = iter.next();
             if (elem instanceof XWPFParagraph) {
-                System.out.println("paragrap");
-                System.out.println(((XWPFParagraph) elem).getText());
+                //System.out.println("paragrap");
+                //System.out.println(((XWPFParagraph) elem).getText());
+
+                if(((XWPFParagraph) elem).getText().contains("LK92")){
+                    while (iter.hasNext()){
+                        if(elem instanceof XWPFParagraph) {
+                            System.out.println(((XWPFParagraph) elem).getText());
+                            if(((XWPFParagraph) elem).getText().equals("Avslutande åtgärder"))
+                                break;
+                        }
+                        elem = iter.next();
+
+                    }
+                }
+
             } else if (elem instanceof XWPFTable) {
-                System.out.println("table");
-                System.out.println(((XWPFTable) elem).getText());
-                System.out.println("Rows: " + ((XWPFTable) elem).getRows().size());
+                //System.out.println("table");
+                //System.out.println(((XWPFTable) elem).getText());
+                //System.out.println("Rows: " + ((XWPFTable) elem).getRows().size());
                 if(((XWPFTable) elem).getText().isEmpty()){
-                    System.out.println(((XWPFTable) elem).getRows().size());
+                    //System.out.println(((XWPFTable) elem).getRows().size());
                     for (XWPFTableRow row: ((XWPFTable) elem).getRows()) {
                         for (XWPFTableCell cell: row.getTableCells()) {
-                            System.out.println(cell.getText());
+                            //System.out.println(cell.getText());
                         }
                     }
                 }

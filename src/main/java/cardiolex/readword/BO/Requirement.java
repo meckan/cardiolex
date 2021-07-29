@@ -37,12 +37,12 @@ public class Requirement {
     // Semicollon för att fungera direkt i excel, men comma fungerade i Azure
     public String getComboHeader() {
         //return "id,Work Item Type,title,description,state,Req ID,effort,area path,iteration path,tags,Steps";
-        return "id,Work Item Type,Title 1,Title 2,description,state,Req ID,effort,area path,iteration path,tags,Steps";
+        return /*"id,"+*/ "Work Item Type,Title 1,Title 2,description,state,Req ID," +/* "effort,"+*/ "area path,iteration path,tags,Steps";
     }
 
     public String[] getComboHeaderArray() {
-        return new String[]{"id", "Work Item Type", "title 1","title 2",
-                "description", "state", "Req ID", "effort", "area path", "iteration path", "tags", "Steps"};
+        return new String[]{/*"id",*/ "Work Item Type", "title 1","title 2",
+                "description", "state", "Req ID",/* "effort",*/ "area path", "iteration path", "tags", "Steps"};
     }
 
     public String getCSV() {
@@ -67,6 +67,8 @@ public class Requirement {
 
     public String getCSVCombo(String[] csvHeaders) {
 
+        if(title.startsWith("Bug"))
+            worksItem = "Bug";
         if (worksItem.isEmpty())
             worksItem = "User Story";
         if (path.isEmpty())
@@ -79,8 +81,10 @@ public class Requirement {
             s = iterator.next();
             //for (String s : cvsHeaders) {
             if (s.equals("id"))
-                if (ID != null)
+                if (ID != null) {
+                    ID = ID.replace("\n","");
                     builder.append(checkSpecialChars(ID));
+                }
             if (s.equals("Work Item Type"))
                 if (worksItem != null)
                     builder.append(checkSpecialChars(worksItem));
@@ -110,11 +114,17 @@ public class Requirement {
 
 
             if (s.equals("tags")) {
-                if (tests.isEmpty())
-                    return builder.toString();
-                for (String test : tests) {
-                    if (!test.isEmpty())
-                        builder.append(checkSpecialChars(test)).append(" ; ").append(checkSpecialChars(test)).append(" ; ");
+                if (tests != null) {
+                    Iterator<String> tagsIterator = tests.iterator();
+                    String temp;
+                    while (tagsIterator.hasNext()){
+                        temp = tagsIterator.next();
+                        if(!temp.isEmpty()) {
+                            builder.append(checkSpecialChars(temp));
+                            if(tagsIterator.hasNext())
+                                builder.append(" ; ");
+                        }
+                    }
                 }
             }
             if (iterator.hasNext())
@@ -146,7 +156,6 @@ public class Requirement {
         }
         return escapedData;
     }
-
 
     @Override
     public boolean equals(Object o) {

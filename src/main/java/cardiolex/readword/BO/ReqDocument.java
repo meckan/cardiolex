@@ -139,11 +139,6 @@ public class ReqDocument {
             }
 
             System.out.println("Req: " + requirementList.size());
-
-            for (Requirement req : requirementList) {
-                System.out.println(req.toString());
-            }
-
             System.out.println("Tests: " + testInstructionList.size());
 
         } catch (NotOfficeXmlFileException | IllegalStateException | ZipException e) {
@@ -293,6 +288,10 @@ public class ReqDocument {
         List<String> reqIds = null;
         String paragraphTemp = null;
         String subheading = null;
+
+
+        boolean print = false;
+
         while (paragraphIterator.hasNext()) {
 
             if (currentParagraph != null) {
@@ -302,16 +301,24 @@ public class ReqDocument {
             currentParagraph = paragraphIterator.next();
             //for (XWPFParagraph p : paragraphs) {
 
-
             if (currentParagraph.getText().contains("Kommentar")) {
                 reqIds = new ArrayList<>();
+                //boolean print = false;
                 while (paragraphIterator.hasNext() &&
                         !(currentParagraph = paragraphIterator.next()).getText().contains("Beskrivning")) {
                     //testInstruction.getRequirementIds().add(currentParagraph.getText().split("\t")[0]);
 
+
+                    if(currentParagraph.getText().contains("LK94"))
+                        print = true;
+
+                    if(print)
+                        System.out.println(currentParagraph.getText());
+
                     String[] dividedParagraph = currentParagraph.getText().split("\t");
                     if (dividedParagraph.length > 0) {
                         String reqId = dividedParagraph[0];
+
                         if (checkIfNewTest(reqId.toCharArray())) {
                             //testInstruction.getRequirementIds().add(currentParagraph.getText().split("\t")[0]);
                             reqIds.add(reqId);
@@ -328,10 +335,16 @@ public class ReqDocument {
             } else if (currentParagraph.getText().contains("Avslutande åtgärder")) {
                 //System.out.println(testInstruction.toString());
                 //System.out.println(testInstruction.toString());
+
+                if(print) {
+                    System.out.println("Avslut");
+                    print = false;
+                }
+
                 if (testInstruction != null && testInstruction.getId() == null) {
-                    System.out.println("Updating id");
+                    //System.out.println("Updating id");
                     testInstruction.setId(subheading);
-                    System.out.println(testInstruction.toString());
+                    //System.out.println(testInstruction.toString());
 
                 }
                 testInstructionList.add(testInstruction);
@@ -349,9 +362,11 @@ public class ReqDocument {
                 } else if (!currentParagraph.getText().isEmpty() && !currentParagraph.getText().contains("Mötesprotokoll:") &&
                         !currentParagraph.getText().contains("Användarintyg:__")) {
                     testInstruction.getTests().add(currentParagraph.getText());
+                    if(print)
+                        System.out.println(currentParagraph.getText());
+
                 }
             } else if (currentParagraph.getText().contains("Förberedelser")) {
-                System.out.println(paragraphTemp);
                 subheading = paragraphTemp;
             }
         }
@@ -445,6 +460,7 @@ public class ReqDocument {
         if (fileName.contains("ECView") || fileName.contains("EC-View")
                 || fileName.contains("EC View")
                 || fileName.contains("ECSenseView")
+                || fileName.contains("Långt-EKG")
 
         )
             return "ECProjects\\Legacy\\ECView Legacy";
